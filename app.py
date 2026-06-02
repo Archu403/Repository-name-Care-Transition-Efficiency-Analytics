@@ -1,5 +1,30 @@
 import streamlit as st
 import pandas as pd
+import os
+
+st.title("Care Transition Efficiency & Placement Outcome Analytics")
+
+# DEBUG
+st.write("Files available:")
+st.write(os.listdir("."))
+
+# Load CSV
+df = pd.read_csv("HHS_Unaccompanied_Alien_Children_Program(1).csv")
+
+
+
+
+
+
+
+
+
+
+
+
+
+import streamlit as st
+import pandas as pd
 
 # Page Configuration
 st.set_page_config(
