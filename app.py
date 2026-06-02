@@ -207,9 +207,6 @@ plt.title('Backlog Trend')
 plt.show()
 
 
-[ ]
-
-Start coding or generate with AI.
 
 
 df['Transfer_Efficiency'] = (
@@ -217,7 +214,6 @@ df['Transfer_Efficiency'] = (
 )
 
 print(df['Transfer_Efficiency'].mean())
-0.6910176523134812
 
 
 df['Discharge_Effectiveness'] = (
@@ -225,7 +221,6 @@ df['Discharge_Effectiveness'] = (
 )
 
 print(df['Discharge_Effectiveness'].mean())
-0.023737002796523007
 
 
 df['Pipeline_Throughput'] = (
@@ -233,7 +228,7 @@ df['Pipeline_Throughput'] = (
 )
 
 print(df['Pipeline_Throughput'].mean())
-inf
+
 
 
 df['Backlog'] = (
@@ -247,8 +242,6 @@ print(df['Backlog'].head())
 stability = df['Children discharged from HHS Care'].std()
 
 print("Outcome Stability Score:", stability)
-Outcome Stability Score: 125.7028405572817
-
 
 import matplotlib.pyplot as plt
 
@@ -505,9 +498,3 @@ st.success(
     """
 )
 
-st.write("Dashboard Completed Successfully
-
-2026-06-02 08:05:26.934 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
-2026-06-02 08:05:26.935 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
-2026-06-02 08:05:26.937 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
-Colab paid products - Cancel contracts here
