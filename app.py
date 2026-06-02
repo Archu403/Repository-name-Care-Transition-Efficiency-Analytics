@@ -124,4 +124,4 @@ st.success(
     """
 )
 
-st.write("Dashboard Completed Suc
+st.write("Dashboard Completed Sucessfully")
