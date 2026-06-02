@@ -3,14 +3,11 @@
 Care_Transition_Project.ipynb
 Care_Transition_Project.ipynb_
 
-[4]
-9s
+
 from google.colab import files
 uploaded = files.upload()
 
 
-[5]
-0s
 import pandas as pd
 
 df = pd.read_csv("HHS_Unaccompanied_Alien_Children_Program - HHS_Unaccompanied_Alien_Children_Program (1).csv")
@@ -20,13 +17,10 @@ df.info()
 df.describe()
 
 
-[6]
-0s
 df.isnull().sum()
 
 
-[7]
-0s
+
 # Remove commas from all numeric columns
 
 cols = [
@@ -41,8 +35,7 @@ for col in cols:
     df[col] = df[col].astype(str).str.replace(',', '')
     df[col] = pd.to_numeric(df[col])
 
-[8]
-0s
+
 import pandas as pd
 
 # Convert Date column to datetime format
@@ -84,16 +77,10 @@ Data columns (total 6 columns):
 dtypes: datetime64[ns](1), int64(5)
 memory usage: 33.9 KB
 
-[10]
-0s
+
 ['Date', 'Children apprehended and placed in CBP custody*', 'Children in CBP custody', 'Children transferred out of CBP custody', 'Children in HHS Care', 'Children discharged from HHS Care']
 
-[9]
-0s
 
-
-[11]
-0s
 plt.figure(figsize=(12,5))
 plt.plot(df['Date'], df['Children in CBP custody'])
 plt.title('CBP Custody Trend')
@@ -102,8 +89,7 @@ plt.ylabel('Children')
 plt.show()
 
 
-[12]
-0s
+
 plt.figure(figsize=(12,5))
 plt.plot(df['Date'], df['Children transferred out of CBP custody'])
 plt.title('Transferred to HHS Trend')
@@ -112,8 +98,7 @@ plt.ylabel('Children')
 plt.show()
 
 
-[13]
-0s
+
 plt.figure(figsize=(12,5))
 plt.plot(df['Date'], df['Children in HHS Care'])
 plt.title('HHS Care Trend')
@@ -122,8 +107,8 @@ plt.ylabel('Children')
 plt.show()
 
 
-[14]
-0s
+
+
 plt.figure(figsize=(12,5))
 plt.plot(df['Date'], df['Children discharged from HHS Care'])
 plt.title('Discharge Trend')
@@ -132,8 +117,7 @@ plt.ylabel('Children')
 plt.show()
 
 
-[15]
-0s
+
 plt.figure(figsize=(12,5))
 
 plt.plot(df['Date'], df['Children apprehended and placed in CBP custody*'],
@@ -147,8 +131,7 @@ plt.title('Inflow vs Outflow')
 plt.show()
 
 
-[16]
-1s
+
 import seaborn as sns
 
 plt.figure(figsize=(8,6))
@@ -167,8 +150,7 @@ plt.title("Correlation Matrix")
 plt.show()
 
 
-[17]
-0s
+
 plt.figure(figsize=(8,5))
 
 plt.hist(df['Children apprehended and placed in CBP custody*'],
@@ -178,8 +160,7 @@ plt.title('Distribution of Apprehended Children')
 plt.show()
 
 
-[18]
-0s
+
 plt.figure(figsize=(8,5))
 
 plt.hist(df['Children discharged from HHS Care'],
@@ -189,8 +170,7 @@ plt.title('Distribution of Discharges')
 plt.show()
 
 
-[19]
-0s
+
 df['Month'] = df['Date'].dt.month_name()
 
 monthly = df.groupby('Month')[[
@@ -203,8 +183,7 @@ monthly
 
 Next steps:
 
-[20]
-0s
+
 monthly.plot(kind='bar',
              figsize=(12,5))
 
@@ -212,8 +191,7 @@ plt.title("Monthly Average Trends")
 plt.show()
 
 
-[21]
-0s
+
 df['Day'] = df['Date'].dt.day_name()
 
 weekday = df.groupby('Day')[[
@@ -225,8 +203,7 @@ weekday
 
 Next steps:
 
-[22]
-0s
+
 weekday.plot(kind='bar',
              figsize=(10,5))
 
@@ -234,8 +211,7 @@ plt.title("Weekday Analysis")
 plt.show()
 
 
-[23]
-0s
+
 df['Backlog'] = (
     df['Children apprehended and placed in CBP custody*']
     -
@@ -255,8 +231,7 @@ plt.show()
 
 Start coding or generate with AI.
 
-[27]
-0s
+
 df['Transfer_Efficiency'] = (
     df['Children transferred out of CBP custody'] / df['Children in CBP custody']
 )
@@ -264,8 +239,7 @@ df['Transfer_Efficiency'] = (
 print(df['Transfer_Efficiency'].mean())
 0.6910176523134812
 
-[29]
-0s
+
 df['Discharge_Effectiveness'] = (
     df['Children discharged from HHS Care'] / df['Children in HHS Care']
 )
@@ -273,8 +247,7 @@ df['Discharge_Effectiveness'] = (
 print(df['Discharge_Effectiveness'].mean())
 0.023737002796523007
 
-[30]
-0s
+
 df['Pipeline_Throughput'] = (
     df['Children discharged from HHS Care'] / df['Children apprehended and placed in CBP custody*']
 )
@@ -282,8 +255,7 @@ df['Pipeline_Throughput'] = (
 print(df['Pipeline_Throughput'].mean())
 inf
 
-[31]
-0s
+
 df['Backlog'] = (
     df['Children apprehended and placed in CBP custody*'] - df['Children discharged from HHS Care']
 )
@@ -296,15 +268,13 @@ print(df['Backlog'].head())
 4    4
 Name: Backlog, dtype: int64
 
-[32]
-0s
+
 stability = df['Children discharged from HHS Care'].std()
 
 print("Outcome Stability Score:", stability)
 Outcome Stability Score: 125.7028405572817
 
-[33]
-0s
+
 import matplotlib.pyplot as plt
 
 plt.figure(figsize=(12,5))
@@ -313,24 +283,21 @@ plt.title("Transfer Efficiency Trend")
 plt.show()
 
 
-[34]
-0s
+
 plt.figure(figsize=(12,5))
 plt.plot(df['Date'], df['Discharge_Effectiveness'])
 plt.title("Discharge Effectiveness Trend")
 plt.show()
 
 
-[35]
-0s
+
 plt.figure(figsize=(12,5))
 plt.plot(df['Date'], df['Backlog'])
 plt.title("Backlog Accumulation Trend")
 plt.show()
 
 
-[36]
-0s
+
 low_transfer = df[df['Transfer_Efficiency'] < 0.5]
 
 print(low_transfer[['Date', 'Transfer_Efficiency']].head())
@@ -341,8 +308,7 @@ print(low_transfer[['Date', 'Transfer_Efficiency']].head())
 4 2025-12-15             0.214286
 5 2025-12-14             0.114286
 
-[37]
-0s
+
 low_discharge = df[df['Discharge_Effectiveness'] < 0.02]
 
 print(low_discharge[['Date', 'Discharge_Effectiveness']].head())
@@ -353,8 +319,7 @@ print(low_discharge[['Date', 'Discharge_Effectiveness']].head())
 3 2025-12-16                 0.003647
 4 2025-12-15                 0.002834
 
-[38]
-0s
+
 low_transfer = df[df['Transfer_Efficiency'] < 0.5]
 
 print("Low Transfer Efficiency Days:")
@@ -372,8 +337,7 @@ Low Transfer Efficiency Days:
 9  2025-12-08             0.333333
 11 2025-12-04             0.179487
 
-[39]
-0s
+
 low_discharge = df[df['Discharge_Effectiveness'] < 0.02]
 
 print("Low Discharge Effectiveness Days:")
@@ -391,8 +355,7 @@ Low Discharge Effectiveness Days:
 8 2025-12-09                 0.003275
 9 2025-12-08                 0.001639
 
-[40]
-0s
+
 top_backlog = df.sort_values(
     by='Backlog',
     ascending=False
@@ -411,8 +374,7 @@ print(top_backlog[['Date', 'Backlog']].head(10))
 459 2024-02-13       67
 395 2024-05-14       60
 
-[41]
-0s
+
 import matplotlib.pyplot as plt
 
 plt.figure(figsize=(12,5))
@@ -423,8 +385,7 @@ plt.ylabel("Backlog")
 plt.show()
 
 
-[58]
-0s
+
 %%writefile app.py
 
 import streamlit as st
@@ -434,16 +395,14 @@ st.title("Care Transition Efficiency Analytics Dashboard")
 st.write("Welcome to the dashboard!")
 Overwriting app.py
 
-[59]
-0s
+
 !ls
  app.py
 'HHS_Unaccompanied_Alien_Children_Program - HHS_Unaccompanied_Alien_Children_Program (1).csv'
 'HHS_Unaccompanied_Alien_Children_Program - HHS_Unaccompanied_Alien_Children_Program.csv'
  sample_data
 
-[46]
-0s
+
 # Summary KPIs
 
 print("===== PROJECT INSIGHTS =====")
@@ -473,8 +432,7 @@ Maximum Backlog: 121
 Minimum Backlog: -447
 Outcome Stability Score: 125.7
 
-[50]
-11s
+
 !pip install streamlit
 Collecting streamlit
   Downloading streamlit-1.58.0-py3-none-any.whl.metadata (9.6 kB)
@@ -529,8 +487,7 @@ Downloading pydeck-0.9.2-py2.py3-none-any.whl (11.3 MB)
 Installing collected packages: pydeck, streamlit
 Successfully installed pydeck-0.9.2 streamlit-1.58.0
 
-[55]
-0s
+
 import streamlit as st
 import pandas as pd
 
@@ -569,8 +526,7 @@ st.line_chart(df[['Children apprehended and placed in CBP custody*',
 2026-06-02 08:02:51.560 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
 DeltaGenerator()
 
-[57]
-0s
+
 import streamlit as st
 import pandas as pd
 
