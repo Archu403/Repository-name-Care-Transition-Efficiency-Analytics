@@ -5,162 +5,232 @@ import plotly.express as px
 # ----------------------------
 # PAGE CONFIG
 # ----------------------------
-st.set_page_config(page_title="Care Transition Analytics Dashboard", layout="wide")
+st.set_page_config(
+    page_title="Care Transition Analytics Dashboard",
+    layout="wide"
+)
 
-st.title(" Care Transition Efficiency Dashboard")
-
-# ----------------------------
-# IMPACT MESSAGE (IMPORTANT)
-# ----------------------------
-st.success("Built to analyze care transition efficiency and identify system bottlenecks in child welfare flow.")
-
-# ----------------------------
-
+st.title("📊 Care Transition Efficiency & Placement Outcome Analytics")
 
 # ----------------------------
 # LOAD DATA
 # ----------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv("HHS_Unaccompanied_Alien_Children_Program - HHS_Unaccompanied_Alien_Children_Program.csv")
+    df = pd.read_csv(
+        "HHS_Unaccompanied_Alien_Children_Program - HHS_Unaccompanied_Alien_Children_Program.csv"
+    )
     df.columns = df.columns.str.strip()
     return df
 
 df = load_data()
 
-st.success("Dataset loaded successfully")
+# ----------------------------
+# PROBLEM STATEMENT
+# ----------------------------
+st.markdown("## 📌 Problem Statement")
+
+st.info("""
+This dashboard evaluates care transition efficiency by tracking:
+• Children entering CBP custody
+• Transfers from CBP to HHS
+• Discharges from HHS care
+
+The goal is to identify bottlenecks, monitor transfer efficiency,
+track discharge performance, and analyze outcome trends over time.
+""")
+
+# ----------------------------
+# DATE / YEAR FILTER
+# ----------------------------
+st.sidebar.header("📅 Year Filter")
+
+year_range = st.sidebar.slider(
+    "Select Year Range",
+    int(df["Year"].min()),
+    int(df["Year"].max()),
+    (
+        int(df["Year"].min()),
+        int(df["Year"].max())
+    )
+)
+
+filtered_df = df[
+    (df["Year"] >= year_range[0]) &
+    (df["Year"] <= year_range[1])
+]
+
+# ----------------------------
+# KPI CALCULATIONS
+# ----------------------------
+total_cbp = filtered_df[
+    "Children apprehended and placed in CBP custody*"
+].sum()
+
+total_transfer = filtered_df[
+    "Children transferred out of CBP custody"
+].sum()
+
+total_discharge = filtered_df[
+    "Children discharged from HHS Care"
+].sum()
+
+transfer_efficiency = (
+    total_transfer / total_cbp * 100
+    if total_cbp > 0 else 0
+)
+
+discharge_efficiency = (
+    total_discharge / total_transfer * 100
+    if total_transfer > 0 else 0
+)
+
+backlog = total_cbp - total_transfer
 
 # ----------------------------
 # KPI SECTION
 # ----------------------------
-st.markdown("## Key Performance Indicators")
+st.markdown("## 📊 Key Performance Indicators")
 
-numeric_cols = df.select_dtypes(include="number").columns
-
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric("Total Records", len(df))
+    st.metric("Children in CBP", f"{total_cbp:,.0f}")
 
 with col2:
-    st.metric("Total Columns", df.shape[1])
+    st.metric("Transferred to HHS", f"{total_transfer:,.0f}")
 
 with col3:
-    st.metric("Numeric Fields", len(numeric_cols))
+    st.metric("Discharged", f"{total_discharge:,.0f}")
+
+with col4:
+    st.metric("Backlog", f"{backlog:,.0f}")
 
 # ----------------------------
-# SUMMARY BOX (INTERVIEW BOOST)
+# EFFICIENCY PANEL
 # ----------------------------
-st.markdown("##  Summary")
+st.markdown("## ⚡ Transfer & Discharge Efficiency")
 
-st.write(f"""
-- Total Records: {len(df)}
-- Total Features: {df.shape[1]}
-- Numeric Variables: {len(numeric_cols)}
-""")
+c1, c2 = st.columns(2)
+
+with c1:
+    st.metric(
+        "Transfer Efficiency",
+        f"{transfer_efficiency:.2f}%"
+    )
+
+with c2:
+    st.metric(
+        "Discharge Efficiency",
+        f"{discharge_efficiency:.2f}%"
+    )
 
 # ----------------------------
-# DATA PREVIEW
+# THRESHOLD ALERTS
 # ----------------------------
-st.markdown("## Dataset Overview")
-st.dataframe(df.head())
+st.markdown("## 🚨 Alerts")
 
-# ----------------------------
-# FILTER SYSTEM
-# ----------------------------
-st.sidebar.header(" Filters")
-
-cat_cols = df.select_dtypes(include="object").columns
-
-if len(cat_cols) > 0:
-    filter_col = st.sidebar.selectbox("Choose Column", cat_cols)
-    selected_val = st.sidebar.selectbox("Select Value", df[filter_col].dropna().unique())
-    filtered_df = df[df[filter_col] == selected_val]
+if transfer_efficiency < 80:
+    st.error("⚠️ Transfer Efficiency below 80%")
 else:
-    filtered_df = df
+    st.success("✅ Transfer Efficiency healthy")
+
+if discharge_efficiency < 80:
+    st.warning("⚠️ Discharge Efficiency below 80%")
+else:
+    st.success("✅ Discharge Efficiency healthy")
 
 # ----------------------------
-# INSIGHTS SECTION
+# CARE PIPELINE FLOW
 # ----------------------------
-st.markdown("## Key Insights")
+st.markdown("## 🔄 Care Pipeline Flow Visualization")
 
-st.info("""
-This dashboard provides insights into:
-- System efficiency in child transfer flow
-- Data imbalance between categories
-- Potential backlog indicators
-- Outcome distribution patterns
-""")
+flow_df = pd.DataFrame({
+    "Stage": [
+        "CBP Custody",
+        "Transferred",
+        "Discharged"
+    ],
+    "Children": [
+        total_cbp,
+        total_transfer,
+        total_discharge
+    ]
+})
 
-# ----------------------------
-# VISUALIZATION
-# ----------------------------
-st.markdown(" Insights Dashboard")
+fig1 = px.bar(
+    flow_df,
+    x="Stage",
+    y="Children",
+    title="Care Pipeline Flow"
+)
 
-col1, col2 = st.columns(2)
-
-with col1:
-    st.subheader("Filtered Data")
-    st.dataframe(filtered_df)
-
-with col2:
-    if len(numeric_cols) > 0:
-        num_col = st.selectbox("Select Numeric Column", numeric_cols)
-
-        fig = px.histogram(
-            df,
-            x=num_col,
-            title=f"Distribution of {num_col}",
-            template="plotly_white"
-        )
-        st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig1, use_container_width=True)
 
 # ----------------------------
-# PIE CHART
+# BOTTLENECK DETECTION
 # ----------------------------
-st.markdown(" Outcome Distribution")
+st.markdown("## 🚧 Bottleneck Detection")
 
-if len(cat_cols) > 0:
-    pie_col = st.selectbox("Select Category Column", cat_cols)
+filtered_df["Backlog"] = (
+    filtered_df["Children apprehended and placed in CBP custody*"]
+    -
+    filtered_df["Children transferred out of CBP custody"]
+)
 
-    pie_df = df[pie_col].value_counts().reset_index()
-    pie_df.columns = [pie_col, "count"]
+fig2 = px.bar(
+    filtered_df,
+    x="Year",
+    y="Backlog",
+    title="Backlog by Year"
+)
 
-    fig2 = px.pie(pie_df, names=pie_col, values="count", title="Distribution Analysis")
-    st.plotly_chart(fig2)
+st.plotly_chart(fig2, use_container_width=True)
 
 # ----------------------------
-# TREND ANALYSIS
+# OUTCOME TREND ANALYSIS
 # ----------------------------
-st.markdown(" Trend Analysis")
+st.markdown("## 📈 Outcome Trend Analysis")
 
-for col in df.columns:
-    if "year" in col.lower() or "date" in col.lower():
-        try:
-            trend = df.groupby(col).size().reset_index(name="count")
+trend_df = filtered_df.melt(
+    id_vars="Year",
+    value_vars=[
+        "Children apprehended and placed in CBP custody*",
+        "Children transferred out of CBP custody",
+        "Children discharged from HHS Care"
+    ],
+    var_name="Metric",
+    value_name="Count"
+)
 
-            fig3 = px.line(
-                trend,
-                x=col,
-                y="count",
-                markers=True,
-                title="Trend Over Time",
-                template="plotly_white"
-            )
-            st.plotly_chart(fig3)
-        except:
-            pass
+fig3 = px.line(
+    trend_df,
+    x="Year",
+    y="Count",
+    color="Metric",
+    markers=True,
+    title="Care Outcome Trends Over Time"
+)
+
+st.plotly_chart(fig3, use_container_width=True)
+
+# ----------------------------
+# DATA TABLE
+# ----------------------------
+st.markdown("## 📄 Data Overview")
+
+st.dataframe(filtered_df)
 
 # ----------------------------
 # DOWNLOAD REPORT
 # ----------------------------
-st.markdown("##  Export Report")
+st.markdown("## 📥 Download Report")
 
-csv = filtered_df.to_csv(index=False).encode('utf-8')
+csv = filtered_df.to_csv(index=False).encode("utf-8")
 
 st.download_button(
-    label="⬇️ Download Report (CSV)",
-    data=csv,
-    file_name="care_transition_report.csv",
-    mime="text/csv"
+    "⬇️ Download CSV Report",
+    csv,
+    "care_transition_report.csv",
+    "text/csv"
 )
