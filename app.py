@@ -41,10 +41,5 @@ if len(numeric_cols) > 0:
     st.plotly_chart(fig)
 else:
     st.warning("No numeric columns found for visualization")
-import os
 
-@st.cache_data
-def load_data():
-    base_path = os.path.dirname(__file__)
-    file_path = os.path.join(base_path, "HHS_Unaccompanied_Alien_Children_Program.csv")
-    return pd.read_csv(file_path)
+
