@@ -1,152 +1,87 @@
 import streamlit as st
 import pandas as pd
 import os
+import matplotlib.pyplot as plt
+
+# ----------------------------
+# PAGE CONFIG
+# ----------------------------
+st.set_page_config(page_title="Care Transition Dashboard", layout="wide")
 
 st.title("Care Transition Efficiency & Placement Outcome Analytics")
 
-# DEBUG
-st.write("Files available:")
-st.write(os.listdir("."))
+# ----------------------------
+# LOAD DATA SAFELY
+# ----------------------------
+DATA_FILE = "HHS_Unaccompanied_Alien_Children_Program - HHS_Unaccompanied_Alien_Children_Program.csv"
 
-# Load CSV
-df = pd.read_csv("HHS_Unaccompanied_Alien_Children_Program(1).csv")
+file_path = os.path.join(os.path.dirname(__file__), DATA_FILE)
 
+@st.cache_data
+def load_data(path):
+    df = pd.read_csv(path)
+    return df
 
+try:
+    df = load_data(file_path)
+    st.success("Dataset loaded successfully!")
+except Exception as e:
+    st.error("❌ Error loading dataset. Check file name or path.")
+    st.stop()
 
+# ----------------------------
+# BASIC CLEANING
+# ----------------------------
+st.subheader("Dataset Overview")
 
-
-
-
-
-
-
-
-
-
-import streamlit as st
-import pandas as pd
-
-# Page Configuration
-st.set_page_config(
-    page_title="Care Transition Analytics",
-    layout="wide"
-)
-
-st.title("Care Transition Efficiency & Placement Outcome Analytics")
-
-# Load Dataset
-df = pd.read_csv(
-    "HHS_Unaccompanied_Alien_Children_Program - HHS_Unaccompanied_Alien_Children_Program (1).csv"
-)
-
-# Remove commas and convert to numeric
-cols = [
-    'Children apprehended and placed in CBP custody*',
-    'Children in CBP custody',
-    'Children transferred out of CBP custody',
-    'Children in HHS Care',
-    'Children discharged from HHS Care'
-]
-
-for col in cols:
-    df[col] = df[col].astype(str).str.replace(',', '', regex=False)
-    df[col] = pd.to_numeric(df[col], errors='coerce')
-
-# KPIs
-df['Transfer_Efficiency'] = (
-    df['Children transferred out of CBP custody']
-    /
-    df['Children in CBP custody']
-)
-
-df['Discharge_Effectiveness'] = (
-    df['Children discharged from HHS Care']
-    /
-    df['Children in HHS Care']
-)
-
-df['Backlog'] = (
-    df['Children apprehended and placed in CBP custody*']
-    -
-    df['Children discharged from HHS Care']
-)
-
-# Sidebar
-st.sidebar.header("Filters")
-
-# Dataset Preview
-st.subheader("Dataset Preview")
+st.write("Shape:", df.shape)
 st.dataframe(df.head())
 
-# KPI Cards
-st.subheader("Key Performance Indicators")
+# Show missing values
+st.subheader("Missing Values")
+st.dataframe(df.isnull().sum())
 
-col1, col2, col3 = st.columns(3)
+# ----------------------------
+# SIDEBAR FILTERS
+# ----------------------------
+st.sidebar.header("Filters")
 
-with col1:
-    st.metric(
-        "Avg Transfer Efficiency",
-        round(df['Transfer_Efficiency'].mean(), 2)
-    )
+columns = df.columns.tolist()
+selected_column = st.sidebar.selectbox("Select column for analysis", columns)
 
-with col2:
-    st.metric(
-        "Avg Discharge Effectiveness",
-        round(df['Discharge_Effectiveness'].mean(), 2)
-    )
+# ----------------------------
+# BASIC ANALYSIS
+# ----------------------------
+st.subheader(f"Analysis of: {selected_column}")
 
-with col3:
-    st.metric(
-        "Maximum Backlog",
-        int(df['Backlog'].max())
-    )
+if df[selected_column].dtype == "object":
+    st.write("Top categories:")
 
-# Transfer Trend
-st.subheader("Transfer Trend")
+    value_counts = df[selected_column].value_counts().head(10)
 
-st.line_chart(
-    df['Children transferred out of CBP custody']
+    fig, ax = plt.subplots()
+    value_counts.plot(kind="bar", ax=ax)
+    plt.xticks(rotation=45)
+    st.pyplot(fig)
+
+else:
+    st.write("Statistical Summary")
+    st.write(df[selected_column].describe())
+
+    fig, ax = plt.subplots()
+    ax.hist(df[selected_column].dropna(), bins=20)
+    st.pyplot(fig)
+
+# ----------------------------
+# FULL DATA DOWNLOAD
+# ----------------------------
+st.subheader("Download Cleaned Data")
+
+csv = df.to_csv(index=False).encode("utf-8")
+
+st.download_button(
+    "Download CSV",
+    csv,
+    "cleaned_data.csv",
+    "text/csv"
 )
-
-# Discharge Trend
-st.subheader("Discharge Trend")
-
-st.line_chart(
-    df['Children discharged from HHS Care']
-)
-
-# Backlog Trend
-st.subheader("Backlog Accumulation Trend")
-
-st.line_chart(
-    df['Backlog']
-)
-
-# CBP vs HHS Care
-st.subheader("CBP Custody vs HHS Care")
-
-comparison = df[
-    [
-        'Children in CBP custody',
-        'Children in HHS Care'
-    ]
-]
-
-st.line_chart(comparison)
-
-# Insights
-st.subheader("Key Insights")
-
-st.success(
-    """
-    • Transfer efficiency indicates how quickly children move from CBP to HHS.
-
-    • Discharge effectiveness measures successful reunification outcomes.
-
-    • Backlog highlights periods where inflow exceeds outflow.
-
-    • Monitoring these KPIs helps identify operational bottlenecks.
-    """
-)
-
-st.write("Dashboard Completed Sucessfully")
