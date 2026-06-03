@@ -10,7 +10,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("📊 Care Transition Efficiency & Placement Outcome Analytics")
+st.title(" Care Transition Efficiency & Placement Outcome Analytics")
 
 # ----------------------------
 # LOAD DATA
@@ -35,29 +35,11 @@ def load_data():
 
 df = load_data()
 
-# ----------------------------
-# PROBLEM STATEMENT
-# ----------------------------
-st.markdown("## 📌 Problem Statement")
-
-st.info("""
-While aggregate counts of children in custody are monitored,
-process efficiency metrics are largely absent.
-
-This dashboard helps answer:
-
-• How efficiently are children transferred from CBP to HHS?
-• Are discharges keeping pace with inflows?
-• Where and when do care backlogs accumulate?
-• Are placement outcomes improving over time?
-
-The goal is to identify bottlenecks and support data-driven decisions.
-""")
 
 # ----------------------------
 # DATE FILTER
 # ----------------------------
-st.sidebar.header("📅 Date Range")
+st.sidebar.header("Date Range")
 
 min_date = df["Date"].min().date()
 max_date = df["Date"].max().date()
@@ -116,7 +98,7 @@ backlog = total_cbp - total_transfer
 # ----------------------------
 # KPI CARDS
 # ----------------------------
-st.markdown("## 📊 Key Performance Indicators")
+st.markdown("##  Key Performance Indicators")
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -135,7 +117,7 @@ with col4:
 # ----------------------------
 # RATIO TOGGLE
 # ----------------------------
-st.markdown("## ⚡ Efficiency Metrics")
+st.markdown("##  Efficiency Metrics")
 
 metric_option = st.selectbox(
     "Select Metric",
@@ -160,7 +142,7 @@ if metric_option == "Discharge Efficiency":
 # ----------------------------
 # ALERTS
 # ----------------------------
-st.markdown("## 🚨 Threshold Alerts")
+st.markdown(" Threshold Alerts")
 
 if transfer_efficiency < 80:
     st.error(
@@ -183,7 +165,7 @@ else:
 # ----------------------------
 # CARE PIPELINE FLOW
 # ----------------------------
-st.markdown("## 🔄 Care Pipeline Flow Visualization")
+st.markdown(" Care Pipeline Flow Visualization")
 
 flow_df = pd.DataFrame({
     "Stage": [
@@ -210,7 +192,7 @@ st.plotly_chart(fig_flow, use_container_width=True)
 # ----------------------------
 # BOTTLENECK DETECTION
 # ----------------------------
-st.markdown("## 🚧 Bottleneck Detection")
+st.markdown("##  Bottleneck Detection")
 
 filtered_df = filtered_df.copy()
 
@@ -233,7 +215,7 @@ st.plotly_chart(fig_backlog, use_container_width=True)
 # ----------------------------
 # OUTCOME TREND ANALYSIS
 # ----------------------------
-st.markdown("## 📈 Outcome Trend Analysis")
+st.markdown("##  Outcome Trend Analysis")
 
 trend_df = filtered_df.melt(
     id_vars="Date",
@@ -260,19 +242,19 @@ st.plotly_chart(fig_trend, use_container_width=True)
 # ----------------------------
 # DATA TABLE
 # ----------------------------
-st.markdown("## 📄 Data Overview")
+st.markdown("##  Data Overview")
 
 st.dataframe(filtered_df)
 
 # ----------------------------
 # DOWNLOAD REPORT
 # ----------------------------
-st.markdown("## 📥 Download Report")
+st.markdown("##  Download Report")
 
 csv = filtered_df.to_csv(index=False).encode("utf-8")
 
 st.download_button(
-    label="⬇️ Download Filtered Report",
+    label=" Download Filtered Report",
     data=csv,
     file_name="care_transition_report.csv",
     mime="text/csv"
