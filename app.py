@@ -7,116 +7,117 @@ import plotly.express as px
 # ----------------------------
 st.set_page_config(page_title="Care Transition Dashboard", layout="wide")
 
-st.title("📊 Care Transition Efficiency & Placement Outcome Dashboard")
+st.title("📊 Care Transition Efficiency Dashboard")
 
 # ----------------------------
 # LOAD DATA
 # ----------------------------
 @st.cache_data
 def load_data():
-    uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
-    if uploaded_file:
-        df = pd.read_csv(uploaded_file)
-        return df
-    return None
+    df = pd.read_csv("HHS_Unaccompanied_Alien_Children_Program - HHS_Unaccompanied_Alien_Children_Program.csv")
+    df.columns = df.columns.str.strip()
+    return df
 
 df = load_data()
 
-if df is None:
-    st.warning("Please upload your dataset to continue.")
-    st.stop()
+st.success("Data loaded successfully")
 
 # ----------------------------
-# CLEAN COLUMN NAMES
+# KPI SECTION (POWER BI STYLE)
 # ----------------------------
-df.columns = df.columns.str.strip()
+st.markdown("## 📌 Key Performance Indicators")
 
-st.subheader("📌 Data Preview")
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.metric("Total Records", len(df))
+
+with col2:
+    st.metric("Total Columns", df.shape[1])
+
+with col3:
+    numeric_cols = df.select_dtypes(include="number").columns
+    if len(numeric_cols) > 0:
+        st.metric("Numeric Fields", len(numeric_cols))
+    else:
+        st.metric("Numeric Fields", 0)
+
+# ----------------------------
+# DATA PREVIEW
+# ----------------------------
+st.markdown("## 📄 Dataset Overview")
 st.dataframe(df.head())
 
 # ----------------------------
-# YOUR EXACT COLUMNS
+# FILTER (CATEGORICAL ONLY)
 # ----------------------------
-cbp_col = "Children apprehended and placed in CBP custody*"
-transfer_col = "Children transferred out of CBP custody"
-hhs_col = "Children discharged from HHS Care"
+st.sidebar.header("🔍 Filters")
 
-# ----------------------------
-# CHECK COLUMNS EXIST
-# ----------------------------
-missing_cols = [col for col in [cbp_col, transfer_col, hhs_col] if col not in df.columns]
+cat_cols = df.select_dtypes(include="object").columns
 
-if missing_cols:
-    st.error(f"Missing columns in dataset: {missing_cols}")
-    st.stop()
+if len(cat_cols) > 0:
+    filter_col = st.sidebar.selectbox("Select Category Column", cat_cols)
+    selected_val = st.sidebar.selectbox("Select Value", df[filter_col].dropna().unique())
 
-# ----------------------------
-# KPIs
-# ----------------------------
-st.subheader("📊 Key Performance Indicators")
-
-col1, col2, col3, col4 = st.columns(4)
-
-total_cbp = df[cbp_col].sum()
-total_transfer = df[transfer_col].sum()
-total_hhs = df[hhs_col].sum()
-
-backlog = total_transfer - total_hhs
-
-col1.metric("CBP Apprehensions", f"{total_cbp:,.0f}")
-col2.metric("Transferred Out of CBP", f"{total_transfer:,.0f}")
-col3.metric("HHS Discharges", f"{total_hhs:,.0f}")
-col4.metric("Estimated Backlog", f"{backlog:,.0f}")
-
-# ----------------------------
-# TRENDS OVER TIME (IF DATE EXISTS)
-# ----------------------------
-st.subheader("📈 Trend Analysis")
-
-# Try to find date column
-date_col = None
-for c in df.columns:
-    if "date" in c.lower() or "month" in c.lower() or "year" in c.lower():
-        date_col = c
-        break
-
-if date_col:
-    df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
-
-    fig1 = px.line(df, x=date_col, y=cbp_col, title="CBP Apprehensions Over Time")
-    st.plotly_chart(fig1, use_container_width=True)
-
-    fig2 = px.line(df, x=date_col, y=transfer_col, title="Transfers Out of CBP Over Time")
-    st.plotly_chart(fig2, use_container_width=True)
-
-    fig3 = px.line(df, x=date_col, y=hhs_col, title="HHS Discharges Over Time")
-    st.plotly_chart(fig3, use_container_width=True)
-
+    filtered_df = df[df[filter_col] == selected_val]
 else:
-    st.info("No date column found. Showing summary charts instead.")
-
-    fig = px.bar(
-        x=["CBP", "Transferred", "HHS Discharged"],
-        y=[total_cbp, total_transfer, total_hhs],
-        title="Overall System Summary"
-    )
-    st.plotly_chart(fig, use_container_width=True)
+    filtered_df = df
 
 # ----------------------------
-# SYSTEM FLOW VISUAL
+# VISUALIZATION SECTION
 # ----------------------------
-st.subheader("🔄 System Flow Insight")
+st.markdown("## 📊 Insights Dashboard")
 
-flow_df = pd.DataFrame({
-    "Stage": ["CBP Custody", "Transferred", "HHS Care"],
-    "Count": [total_cbp, total_transfer, total_hhs]
-})
+col1, col2 = st.columns(2)
 
-fig_flow = px.funnel(flow_df, x="Count", y="Stage", title="Care Transition Flow")
-st.plotly_chart(fig_flow, use_container_width=True)
+with col1:
+    st.subheader("Filtered Data")
+    st.dataframe(filtered_df)
+
+with col2:
+    if len(numeric_cols) > 0:
+        num_col = st.selectbox("Select Metric for Analysis", numeric_cols)
+
+        fig = px.histogram(
+            df,
+            x=num_col,
+            title=f"Distribution of {num_col}",
+            template="plotly_white"
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
 # ----------------------------
-# RAW DATA
+# TREND ANALYSIS (if date/year exists)
 # ----------------------------
-st.subheader("📄 Raw Data")
-st.dataframe(df)
+st.markdown("## 📈 Trend Analysis")
+
+for col in df.columns:
+    if "year" in col.lower() or "date" in col.lower():
+        try:
+            trend_df = df.groupby(col).size().reset_index(name="count")
+
+            fig2 = px.line(
+                trend_df,
+                x=col,
+                y="count",
+                title="Trend Over Time",
+                markers=True,
+                template="plotly_white"
+            )
+            st.plotly_chart(fig2, use_container_width=True)
+        except:
+            pass
+
+# ----------------------------
+# DOWNLOAD REPORT (PRO FEATURE)
+# ----------------------------
+st.markdown("## 📥 Export Report")
+
+csv = filtered_df.to_csv(index=False).encode('utf-8')
+
+st.download_button(
+    label="⬇️ Download Filtered Report (CSV)",
+    data=csv,
+    file_name="care_transition_report.csv",
+    mime="text/csv"
+)
