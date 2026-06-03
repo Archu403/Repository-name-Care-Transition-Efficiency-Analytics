@@ -5,9 +5,26 @@ import plotly.express as px
 # ----------------------------
 # PAGE CONFIG
 # ----------------------------
-st.set_page_config(page_title="Care Transition Dashboard", layout="wide")
+st.set_page_config(page_title="Care Transition Analytics Dashboard", layout="wide")
 
 st.title("📊 Care Transition Efficiency Dashboard")
+
+# ----------------------------
+# PROBLEM STATEMENT
+# ----------------------------
+st.markdown("## 📌 Problem Statement")
+
+st.info("""
+While aggregate counts of children in custody are monitored, process efficiency metrics are largely missing, making it difficult to evaluate system performance.
+
+Key questions:
+• How efficiently are children transferred from CBP to HHS?  
+• Are discharges keeping pace with inflows?  
+• Where and when do care backlogs accumulate?  
+• How do placement outcomes vary over time?
+
+Without structured transition analytics, bottlenecks remain hidden.
+""")
 
 # ----------------------------
 # LOAD DATA
@@ -20,10 +37,10 @@ def load_data():
 
 df = load_data()
 
-st.success("Data loaded successfully")
+st.success("Dataset loaded successfully")
 
 # ----------------------------
-# KPI SECTION (POWER BI STYLE)
+# KPI SECTION
 # ----------------------------
 st.markdown("## 📌 Key Performance Indicators")
 
@@ -37,10 +54,7 @@ with col2:
 
 with col3:
     numeric_cols = df.select_dtypes(include="number").columns
-    if len(numeric_cols) > 0:
-        st.metric("Numeric Fields", len(numeric_cols))
-    else:
-        st.metric("Numeric Fields", 0)
+    st.metric("Numeric Fields", len(numeric_cols))
 
 # ----------------------------
 # DATA PREVIEW
@@ -49,22 +63,21 @@ st.markdown("## 📄 Dataset Overview")
 st.dataframe(df.head())
 
 # ----------------------------
-# FILTER (CATEGORICAL ONLY)
+# FILTER SYSTEM
 # ----------------------------
 st.sidebar.header("🔍 Filters")
 
 cat_cols = df.select_dtypes(include="object").columns
 
 if len(cat_cols) > 0:
-    filter_col = st.sidebar.selectbox("Select Category Column", cat_cols)
+    filter_col = st.sidebar.selectbox("Choose Column", cat_cols)
     selected_val = st.sidebar.selectbox("Select Value", df[filter_col].dropna().unique())
-
     filtered_df = df[df[filter_col] == selected_val]
 else:
     filtered_df = df
 
 # ----------------------------
-# VISUALIZATION SECTION
+# VISUALIZATION
 # ----------------------------
 st.markdown("## 📊 Insights Dashboard")
 
@@ -76,7 +89,7 @@ with col1:
 
 with col2:
     if len(numeric_cols) > 0:
-        num_col = st.selectbox("Select Metric for Analysis", numeric_cols)
+        num_col = st.selectbox("Select Numeric Column", numeric_cols)
 
         fig = px.histogram(
             df,
@@ -87,36 +100,50 @@ with col2:
         st.plotly_chart(fig, use_container_width=True)
 
 # ----------------------------
-# TREND ANALYSIS (if date/year exists)
+# PIE CHART (OUTCOMES)
+# ----------------------------
+st.markdown("## 📊 Distribution Analysis")
+
+if len(cat_cols) > 0:
+    pie_col = st.selectbox("Select Category Column for Analysis", cat_cols)
+
+    pie_df = df[pie_col].value_counts().reset_index()
+    pie_df.columns = [pie_col, "count"]
+
+    fig2 = px.pie(pie_df, names=pie_col, values="count", title="Outcome Distribution")
+    st.plotly_chart(fig2)
+
+# ----------------------------
+# TREND ANALYSIS
 # ----------------------------
 st.markdown("## 📈 Trend Analysis")
 
 for col in df.columns:
     if "year" in col.lower() or "date" in col.lower():
         try:
-            trend_df = df.groupby(col).size().reset_index(name="count")
+            trend = df.groupby(col).size().reset_index(name="count")
 
-            fig2 = px.line(
-                trend_df,
+            fig3 = px.line(
+                trend,
                 x=col,
                 y="count",
-                title="Trend Over Time",
                 markers=True,
+                title="Trend Over Time",
                 template="plotly_white"
             )
-            st.plotly_chart(fig2, use_container_width=True)
+            st.plotly_chart(fig3)
         except:
             pass
 
 # ----------------------------
-# DOWNLOAD REPORT (PRO FEATURE)
+# DOWNLOAD REPORT
 # ----------------------------
 st.markdown("## 📥 Export Report")
 
 csv = filtered_df.to_csv(index=False).encode('utf-8')
 
 st.download_button(
-    label="⬇️ Download Filtered Report (CSV)",
+    label="⬇️ Download Filtered Report",
     data=csv,
     file_name="care_transition_report.csv",
     mime="text/csv"
