@@ -246,15 +246,20 @@ st.markdown("##  Data Overview")
 
 st.dataframe(filtered_df)
 
-# ----------------------------
-# DOWNLOAD REPORT
-# ----------------------------
-st.markdown("##  Download Report")
+# Create report copy
+report_df = filtered_df.copy()
 
-csv = filtered_df.to_csv(index=False).encode("utf-8")
+# Format date
+report_df["Date"] = pd.to_datetime(
+    report_df["Date"]
+).dt.strftime("%d-%m-%Y")
 
+# Convert to CSV
+csv = report_df.to_csv(index=False).encode("utf-8")
+
+# Download button
 st.download_button(
-    label=" Download Filtered Report",
+    label="⬇️ Download Filtered Report",
     data=csv,
     file_name="care_transition_report.csv",
     mime="text/csv"
