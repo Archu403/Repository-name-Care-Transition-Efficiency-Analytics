@@ -3,140 +3,120 @@ import pandas as pd
 import plotly.express as px
 
 # ----------------------------
-# PAGE CONFIG (MODERN UI)
+# PAGE CONFIG
 # ----------------------------
-st.set_page_config(
-    page_title="Care Transition Intelligence Dashboard",
-    layout="wide",
-    page_icon="📊"
-)
+st.set_page_config(page_title="Care Transition Dashboard", layout="wide")
 
-st.title("🧠 Care Transition Intelligence Dashboard")
-st.caption("Analyzing efficiency, backlog formation, and placement outcomes in child care transition system")
+st.title("📊 Care Transition Efficiency & Placement Outcome Dashboard")
 
 # ----------------------------
 # LOAD DATA
 # ----------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv("HHS_Unaccompanied_Alien_Children_Program.csv")
-    df.columns = df.columns.str.strip()
-    return df
+    uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
+    if uploaded_file:
+        df = pd.read_csv(uploaded_file)
+        return df
+    return None
 
 df = load_data()
 
-# ----------------------------
-# SIDEBAR FILTERS (CREATIVE TOUCH)
-# ----------------------------
-st.sidebar.header("🎛️ Control Panel")
-
-numeric_cols = df.select_dtypes(include="number").columns.tolist()
-
-selected_metric = st.sidebar.selectbox(
-    "Choose Primary Metric",
-    numeric_cols
-)
-
-show_raw = st.sidebar.toggle("Show Raw Data")
+if df is None:
+    st.warning("Please upload your dataset to continue.")
+    st.stop()
 
 # ----------------------------
-# KPI ENGINE (SMART INSIGHTS)
+# CLEAN COLUMN NAMES
 # ----------------------------
-st.markdown("## 📌 System Performance Snapshot")
+df.columns = df.columns.str.strip()
 
-total = df[selected_metric].sum()
-avg = df[selected_metric].mean()
-peak = df[selected_metric].max()
-
-col1, col2, col3 = st.columns(3)
-
-col1.metric("Total Volume", f"{total:,.0f}")
-col2.metric("Average Flow", f"{avg:,.2f}")
-col3.metric("Peak Pressure", f"{peak:,.0f}")
-
-st.divider()
+st.subheader("📌 Data Preview")
+st.dataframe(df.head())
 
 # ----------------------------
-# FLOW INTELLIGENCE VIEW
+# YOUR EXACT COLUMNS
 # ----------------------------
-st.subheader("🔄 Flow Intelligence (Inflow Pressure Over Time)")
+cbp_col = "Children apprehended and placed in CBP custody*"
+transfer_col = "Children transferred out of CBP custody"
+hhs_col = "Children discharged from HHS Care"
 
-if "Date" in df.columns:
-    df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+# ----------------------------
+# CHECK COLUMNS EXIST
+# ----------------------------
+missing_cols = [col for col in [cbp_col, transfer_col, hhs_col] if col not in df.columns]
 
-    flow = df.groupby("Date")[selected_metric].sum().reset_index()
+if missing_cols:
+    st.error(f"Missing columns in dataset: {missing_cols}")
+    st.stop()
 
-    fig = px.area(
-        flow,
-        x="Date",
-        y=selected_metric,
-        title="System Load Over Time (Flow Pressure Curve)"
+# ----------------------------
+# KPIs
+# ----------------------------
+st.subheader("📊 Key Performance Indicators")
+
+col1, col2, col3, col4 = st.columns(4)
+
+total_cbp = df[cbp_col].sum()
+total_transfer = df[transfer_col].sum()
+total_hhs = df[hhs_col].sum()
+
+backlog = total_transfer - total_hhs
+
+col1.metric("CBP Apprehensions", f"{total_cbp:,.0f}")
+col2.metric("Transferred Out of CBP", f"{total_transfer:,.0f}")
+col3.metric("HHS Discharges", f"{total_hhs:,.0f}")
+col4.metric("Estimated Backlog", f"{backlog:,.0f}")
+
+# ----------------------------
+# TRENDS OVER TIME (IF DATE EXISTS)
+# ----------------------------
+st.subheader("📈 Trend Analysis")
+
+# Try to find date column
+date_col = None
+for c in df.columns:
+    if "date" in c.lower() or "month" in c.lower() or "year" in c.lower():
+        date_col = c
+        break
+
+if date_col:
+    df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
+
+    fig1 = px.line(df, x=date_col, y=cbp_col, title="CBP Apprehensions Over Time")
+    st.plotly_chart(fig1, use_container_width=True)
+
+    fig2 = px.line(df, x=date_col, y=transfer_col, title="Transfers Out of CBP Over Time")
+    st.plotly_chart(fig2, use_container_width=True)
+
+    fig3 = px.line(df, x=date_col, y=hhs_col, title="HHS Discharges Over Time")
+    st.plotly_chart(fig3, use_container_width=True)
+
+else:
+    st.info("No date column found. Showing summary charts instead.")
+
+    fig = px.bar(
+        x=["CBP", "Transferred", "HHS Discharged"],
+        y=[total_cbp, total_transfer, total_hhs],
+        title="Overall System Summary"
     )
     st.plotly_chart(fig, use_container_width=True)
 
 # ----------------------------
-# BACKLOG SIMULATION (CREATIVE KPI)
+# SYSTEM FLOW VISUAL
 # ----------------------------
-st.subheader("📦 Backlog Pressure Simulation")
+st.subheader("🔄 System Flow Insight")
 
-df = df.sort_index()
-df["cumulative_flow"] = df[selected_metric].cumsum()
+flow_df = pd.DataFrame({
+    "Stage": ["CBP Custody", "Transferred", "HHS Care"],
+    "Count": [total_cbp, total_transfer, total_hhs]
+})
 
-fig2 = px.line(
-    df,
-    y="cumulative_flow",
-    title="Accumulated System Load (Backlog Pressure Index)"
-)
-st.plotly_chart(fig2, use_container_width=True)
+fig_flow = px.funnel(flow_df, x="Count", y="Stage", title="Care Transition Flow")
+st.plotly_chart(fig_flow, use_container_width=True)
 
 # ----------------------------
-# SYSTEM BALANCE ANALYSIS
+# RAW DATA
 # ----------------------------
-st.subheader("⚖️ System Balance Indicator")
-
-if len(df) > 1:
-    trend_change = df[selected_metric].diff().fillna(0)
-
-    fig3 = px.bar(
-        x=df.index,
-        y=trend_change,
-        title="Flow Volatility (Sudden Surges = Bottleneck Risk)"
-    )
-    st.plotly_chart(fig3, use_container_width=True)
-
-# ----------------------------
-# OUTCOME DISTRIBUTION (IF AVAILABLE)
-# ----------------------------
-st.subheader("🏠 Placement / Outcome Distribution")
-
-outcome_cols = [c for c in df.columns if "placement" in c.lower() or "discharge" in c.lower()]
-
-if outcome_cols:
-    outcome = df[outcome_cols].sum().reset_index()
-    outcome.columns = ["Outcome Type", "Count"]
-
-    fig4 = px.pie(
-        outcome,
-        names="Outcome Type",
-        values="Count",
-        title="System Outcome Breakdown"
-    )
-    st.plotly_chart(fig4, use_container_width=True)
-else:
-    st.info("No explicit outcome columns detected — using proxy metrics only.")
-
-# ----------------------------
-# INSIGHT PANEL (IMPORTANT FOR PROJECT)
-# ----------------------------
-st.markdown("## 🧠 Key Insights")
-
-st.success("✔ System efficiency depends on flow balance between intake and discharge")
-st.warning("⚠ Backlogs form when cumulative inflow exceeds system processing capacity")
-st.info("📉 High volatility indicates bottleneck periods and operational stress")
-
-# ----------------------------
-# RAW DATA VIEW
-# ----------------------------
-if show_raw:
-    st.subheader("📄 Raw Dataset")
-    st.dataframe(df)
+st.subheader("📄 Raw Data")
+st.dataframe(df)
