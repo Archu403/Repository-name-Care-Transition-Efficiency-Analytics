@@ -10,6 +10,11 @@ st.set_page_config(page_title="Care Transition Analytics Dashboard", layout="wid
 st.title("📊 Care Transition Efficiency Dashboard")
 
 # ----------------------------
+# IMPACT MESSAGE (IMPORTANT)
+# ----------------------------
+st.success("Built to analyze care transition efficiency and identify system bottlenecks in child welfare flow.")
+
+# ----------------------------
 # PROBLEM STATEMENT
 # ----------------------------
 st.markdown("## 📌 Problem Statement")
@@ -44,6 +49,8 @@ st.success("Dataset loaded successfully")
 # ----------------------------
 st.markdown("## 📌 Key Performance Indicators")
 
+numeric_cols = df.select_dtypes(include="number").columns
+
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -53,8 +60,18 @@ with col2:
     st.metric("Total Columns", df.shape[1])
 
 with col3:
-    numeric_cols = df.select_dtypes(include="number").columns
     st.metric("Numeric Fields", len(numeric_cols))
+
+# ----------------------------
+# SUMMARY BOX (INTERVIEW BOOST)
+# ----------------------------
+st.markdown("## 📊 Summary")
+
+st.write(f"""
+- Total Records: {len(df)}
+- Total Features: {df.shape[1]}
+- Numeric Variables: {len(numeric_cols)}
+""")
 
 # ----------------------------
 # DATA PREVIEW
@@ -75,6 +92,19 @@ if len(cat_cols) > 0:
     filtered_df = df[df[filter_col] == selected_val]
 else:
     filtered_df = df
+
+# ----------------------------
+# INSIGHTS SECTION
+# ----------------------------
+st.markdown("## 📌 Key Insights")
+
+st.info("""
+This dashboard provides insights into:
+- System efficiency in child transfer flow
+- Data imbalance between categories
+- Potential backlog indicators
+- Outcome distribution patterns
+""")
 
 # ----------------------------
 # VISUALIZATION
@@ -100,17 +130,17 @@ with col2:
         st.plotly_chart(fig, use_container_width=True)
 
 # ----------------------------
-# PIE CHART (OUTCOMES)
+# PIE CHART
 # ----------------------------
-st.markdown("## 📊 Distribution Analysis")
+st.markdown("## 📊 Outcome Distribution")
 
 if len(cat_cols) > 0:
-    pie_col = st.selectbox("Select Category Column for Analysis", cat_cols)
+    pie_col = st.selectbox("Select Category Column", cat_cols)
 
     pie_df = df[pie_col].value_counts().reset_index()
     pie_df.columns = [pie_col, "count"]
 
-    fig2 = px.pie(pie_df, names=pie_col, values="count", title="Outcome Distribution")
+    fig2 = px.pie(pie_df, names=pie_col, values="count", title="Distribution Analysis")
     st.plotly_chart(fig2)
 
 # ----------------------------
@@ -143,7 +173,7 @@ st.markdown("## 📥 Export Report")
 csv = filtered_df.to_csv(index=False).encode('utf-8')
 
 st.download_button(
-    label="⬇️ Download Filtered Report",
+    label="⬇️ Download Report (CSV)",
     data=csv,
     file_name="care_transition_report.csv",
     mime="text/csv"
