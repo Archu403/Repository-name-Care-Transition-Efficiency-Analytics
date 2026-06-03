@@ -20,7 +20,17 @@ def load_data():
     df = pd.read_csv(
         "HHS_Unaccompanied_Alien_Children_Program - HHS_Unaccompanied_Alien_Children_Program.csv"
     )
+
     df.columns = df.columns.str.strip()
+
+    df["Date"] = pd.to_datetime(df["Date"])
+
+    # Convert HHS Care column if stored as text
+    df["Children in HHS Care"] = pd.to_numeric(
+        df["Children in HHS Care"],
+        errors="coerce"
+    )
+
     return df
 
 df = load_data()
@@ -31,34 +41,42 @@ df = load_data()
 st.markdown("## 📌 Problem Statement")
 
 st.info("""
-This dashboard evaluates care transition efficiency by tracking:
-• Children entering CBP custody
-• Transfers from CBP to HHS
-• Discharges from HHS care
+While aggregate counts of children in custody are monitored,
+process efficiency metrics are largely absent.
 
-The goal is to identify bottlenecks, monitor transfer efficiency,
-track discharge performance, and analyze outcome trends over time.
+This dashboard helps answer:
+
+• How efficiently are children transferred from CBP to HHS?
+• Are discharges keeping pace with inflows?
+• Where and when do care backlogs accumulate?
+• Are placement outcomes improving over time?
+
+The goal is to identify bottlenecks and support data-driven decisions.
 """)
 
 # ----------------------------
-# DATE / YEAR FILTER
+# DATE FILTER
 # ----------------------------
-st.sidebar.header("📅 Year Filter")
+st.sidebar.header("📅 Date Range")
 
-year_range = st.sidebar.slider(
-    "Select Year Range",
-    int(df["Year"].min()),
-    int(df["Year"].max()),
-    (
-        int(df["Year"].min()),
-        int(df["Year"].max())
-    )
+min_date = df["Date"].min().date()
+max_date = df["Date"].max().date()
+
+date_range = st.sidebar.date_input(
+    "Select Date Range",
+    value=(min_date, max_date)
 )
 
-filtered_df = df[
-    (df["Year"] >= year_range[0]) &
-    (df["Year"] <= year_range[1])
-]
+if len(date_range) == 2:
+    start_date, end_date = date_range
+
+    filtered_df = df[
+        (df["Date"] >= pd.to_datetime(start_date))
+        &
+        (df["Date"] <= pd.to_datetime(end_date))
+    ]
+else:
+    filtered_df = df.copy()
 
 # ----------------------------
 # KPI CALCULATIONS
@@ -67,8 +85,16 @@ total_cbp = filtered_df[
     "Children apprehended and placed in CBP custody*"
 ].sum()
 
+total_custody = filtered_df[
+    "Children in CBP custody"
+].sum()
+
 total_transfer = filtered_df[
     "Children transferred out of CBP custody"
+].sum()
+
+total_hhs = filtered_df[
+    "Children in HHS Care"
 ].sum()
 
 total_discharge = filtered_df[
@@ -88,14 +114,14 @@ discharge_efficiency = (
 backlog = total_cbp - total_transfer
 
 # ----------------------------
-# KPI SECTION
+# KPI CARDS
 # ----------------------------
 st.markdown("## 📊 Key Performance Indicators")
 
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric("Children in CBP", f"{total_cbp:,.0f}")
+    st.metric("Children Apprehended", f"{total_cbp:,.0f}")
 
 with col2:
     st.metric("Transferred to HHS", f"{total_transfer:,.0f}")
@@ -107,38 +133,52 @@ with col4:
     st.metric("Backlog", f"{backlog:,.0f}")
 
 # ----------------------------
-# EFFICIENCY PANEL
+# RATIO TOGGLE
 # ----------------------------
-st.markdown("## ⚡ Transfer & Discharge Efficiency")
+st.markdown("## ⚡ Efficiency Metrics")
 
-c1, c2 = st.columns(2)
+metric_option = st.selectbox(
+    "Select Metric",
+    [
+        "Transfer Efficiency",
+        "Discharge Efficiency"
+    ]
+)
 
-with c1:
+if metric_option == "Transfer Efficiency":
     st.metric(
         "Transfer Efficiency",
         f"{transfer_efficiency:.2f}%"
     )
 
-with c2:
+if metric_option == "Discharge Efficiency":
     st.metric(
         "Discharge Efficiency",
         f"{discharge_efficiency:.2f}%"
     )
 
 # ----------------------------
-# THRESHOLD ALERTS
+# ALERTS
 # ----------------------------
-st.markdown("## 🚨 Alerts")
+st.markdown("## 🚨 Threshold Alerts")
 
 if transfer_efficiency < 80:
-    st.error("⚠️ Transfer Efficiency below 80%")
+    st.error(
+        f"Transfer Efficiency is low ({transfer_efficiency:.2f}%)"
+    )
 else:
-    st.success("✅ Transfer Efficiency healthy")
+    st.success(
+        f"Transfer Efficiency is healthy ({transfer_efficiency:.2f}%)"
+    )
 
 if discharge_efficiency < 80:
-    st.warning("⚠️ Discharge Efficiency below 80%")
+    st.warning(
+        f"Discharge Efficiency is low ({discharge_efficiency:.2f}%)"
+    )
 else:
-    st.success("✅ Discharge Efficiency healthy")
+    st.success(
+        f"Discharge Efficiency is healthy ({discharge_efficiency:.2f}%)"
+    )
 
 # ----------------------------
 # CARE PIPELINE FLOW
@@ -147,7 +187,7 @@ st.markdown("## 🔄 Care Pipeline Flow Visualization")
 
 flow_df = pd.DataFrame({
     "Stage": [
-        "CBP Custody",
+        "Apprehended",
         "Transferred",
         "Discharged"
     ],
@@ -158,19 +198,21 @@ flow_df = pd.DataFrame({
     ]
 })
 
-fig1 = px.bar(
+fig_flow = px.bar(
     flow_df,
     x="Stage",
     y="Children",
     title="Care Pipeline Flow"
 )
 
-st.plotly_chart(fig1, use_container_width=True)
+st.plotly_chart(fig_flow, use_container_width=True)
 
 # ----------------------------
 # BOTTLENECK DETECTION
 # ----------------------------
 st.markdown("## 🚧 Bottleneck Detection")
+
+filtered_df = filtered_df.copy()
 
 filtered_df["Backlog"] = (
     filtered_df["Children apprehended and placed in CBP custody*"]
@@ -178,14 +220,15 @@ filtered_df["Backlog"] = (
     filtered_df["Children transferred out of CBP custody"]
 )
 
-fig2 = px.bar(
+fig_backlog = px.line(
     filtered_df,
-    x="Year",
+    x="Date",
     y="Backlog",
-    title="Backlog by Year"
+    markers=True,
+    title="Backlog Trend Over Time"
 )
 
-st.plotly_chart(fig2, use_container_width=True)
+st.plotly_chart(fig_backlog, use_container_width=True)
 
 # ----------------------------
 # OUTCOME TREND ANALYSIS
@@ -193,7 +236,7 @@ st.plotly_chart(fig2, use_container_width=True)
 st.markdown("## 📈 Outcome Trend Analysis")
 
 trend_df = filtered_df.melt(
-    id_vars="Year",
+    id_vars="Date",
     value_vars=[
         "Children apprehended and placed in CBP custody*",
         "Children transferred out of CBP custody",
@@ -203,16 +246,16 @@ trend_df = filtered_df.melt(
     value_name="Count"
 )
 
-fig3 = px.line(
+fig_trend = px.line(
     trend_df,
-    x="Year",
+    x="Date",
     y="Count",
     color="Metric",
     markers=True,
-    title="Care Outcome Trends Over Time"
+    title="Outcome Trends Over Time"
 )
 
-st.plotly_chart(fig3, use_container_width=True)
+st.plotly_chart(fig_trend, use_container_width=True)
 
 # ----------------------------
 # DATA TABLE
@@ -229,8 +272,8 @@ st.markdown("## 📥 Download Report")
 csv = filtered_df.to_csv(index=False).encode("utf-8")
 
 st.download_button(
-    "⬇️ Download CSV Report",
-    csv,
-    "care_transition_report.csv",
-    "text/csv"
+    label="⬇️ Download Filtered Report",
+    data=csv,
+    file_name="care_transition_report.csv",
+    mime="text/csv"
 )
