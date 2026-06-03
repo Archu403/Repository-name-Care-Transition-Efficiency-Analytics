@@ -7,7 +7,7 @@ import plotly.express as px
 # ----------------------------
 st.set_page_config(page_title="Care Transition Analytics Dashboard", layout="wide")
 
-st.title("📊 Care Transition Efficiency Dashboard")
+st.title(" Care Transition Efficiency Dashboard")
 
 # ----------------------------
 # IMPACT MESSAGE (IMPORTANT)
@@ -15,21 +15,7 @@ st.title("📊 Care Transition Efficiency Dashboard")
 st.success("Built to analyze care transition efficiency and identify system bottlenecks in child welfare flow.")
 
 # ----------------------------
-# PROBLEM STATEMENT
-# ----------------------------
-st.markdown("## 📌 Problem Statement")
 
-st.info("""
-While aggregate counts of children in custody are monitored, process efficiency metrics are largely missing, making it difficult to evaluate system performance.
-
-Key questions:
-• How efficiently are children transferred from CBP to HHS?  
-• Are discharges keeping pace with inflows?  
-• Where and when do care backlogs accumulate?  
-• How do placement outcomes vary over time?
-
-Without structured transition analytics, bottlenecks remain hidden.
-""")
 
 # ----------------------------
 # LOAD DATA
@@ -47,7 +33,7 @@ st.success("Dataset loaded successfully")
 # ----------------------------
 # KPI SECTION
 # ----------------------------
-st.markdown("## 📌 Key Performance Indicators")
+st.markdown("## Key Performance Indicators")
 
 numeric_cols = df.select_dtypes(include="number").columns
 
@@ -65,7 +51,7 @@ with col3:
 # ----------------------------
 # SUMMARY BOX (INTERVIEW BOOST)
 # ----------------------------
-st.markdown("## 📊 Summary")
+st.markdown("##  Summary")
 
 st.write(f"""
 - Total Records: {len(df)}
@@ -76,13 +62,13 @@ st.write(f"""
 # ----------------------------
 # DATA PREVIEW
 # ----------------------------
-st.markdown("## 📄 Dataset Overview")
+st.markdown("## Dataset Overview")
 st.dataframe(df.head())
 
 # ----------------------------
 # FILTER SYSTEM
 # ----------------------------
-st.sidebar.header("🔍 Filters")
+st.sidebar.header(" Filters")
 
 cat_cols = df.select_dtypes(include="object").columns
 
@@ -96,7 +82,7 @@ else:
 # ----------------------------
 # INSIGHTS SECTION
 # ----------------------------
-st.markdown("## 📌 Key Insights")
+st.markdown("## Key Insights")
 
 st.info("""
 This dashboard provides insights into:
@@ -109,7 +95,7 @@ This dashboard provides insights into:
 # ----------------------------
 # VISUALIZATION
 # ----------------------------
-st.markdown("## 📊 Insights Dashboard")
+st.markdown(" Insights Dashboard")
 
 col1, col2 = st.columns(2)
 
@@ -132,7 +118,7 @@ with col2:
 # ----------------------------
 # PIE CHART
 # ----------------------------
-st.markdown("## 📊 Outcome Distribution")
+st.markdown(" Outcome Distribution")
 
 if len(cat_cols) > 0:
     pie_col = st.selectbox("Select Category Column", cat_cols)
@@ -146,7 +132,7 @@ if len(cat_cols) > 0:
 # ----------------------------
 # TREND ANALYSIS
 # ----------------------------
-st.markdown("## 📈 Trend Analysis")
+st.markdown(" Trend Analysis")
 
 for col in df.columns:
     if "year" in col.lower() or "date" in col.lower():
@@ -168,7 +154,7 @@ for col in df.columns:
 # ----------------------------
 # DOWNLOAD REPORT
 # ----------------------------
-st.markdown("## 📥 Export Report")
+st.markdown("##  Export Report")
 
 csv = filtered_df.to_csv(index=False).encode('utf-8')
 
