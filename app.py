@@ -3,11 +3,11 @@ import pandas as pd
 
 st.set_page_config(page_title="Care Transition Dashboard", layout="wide")
 
-st.title("📊 Care Transition Analytics Dashboard")
+st.title(" Care Transition Analytics Dashboard")
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv("HHS_Unaccompanied_Alien_Children_Program - HHS_Unaccompanied_Alien_Children_Program .csv")
+    df = pd.read_csv("HHS_Unaccompanied_Alien_Children_Program - HHS_Unaccompanied_Alien_Children_Program.csv")
 
     df.columns = df.columns.str.strip()
     return df
@@ -30,7 +30,7 @@ st.write("### Filtered Data")
 st.dataframe(filtered_df)
 import plotly.express as px
 
-st.write("### 📊 Basic Visualization")
+st.write(" Basic Visualization")
 
 numeric_cols = df.select_dtypes(include="number").columns
 
